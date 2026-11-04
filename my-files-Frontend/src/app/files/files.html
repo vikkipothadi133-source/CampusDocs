@@ -1,0 +1,300 @@
+<div class="drive-page">
+    <app-header></app-header>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">▣</span>
+      <span>CampusDocs</span>
+    </div>
+    
+
+    <div class="search-box">
+      <span>⌕</span>
+      <input
+        type="text"
+        placeholder="Search your files..."
+        [ngModel]="searchText()"
+        (ngModelChange)="searchText.set($event)">
+    </div>
+
+    <!-- <span class="profile">M</span> -->
+
+    <div class="profile-container">
+
+    <button class="profile" (click)="toggleProfile()">
+        {{ userDetails()?.fullName?.charAt(0) || 'U' }}
+    </button>
+
+    @if (profileOpen()) {
+        <div class="profile-dropdown">
+
+            <h3>{{ userDetails()?.fullName || 'User' }}</h3>
+
+            <p>
+                <strong>Email:</strong>
+                {{ userDetails()?.email || 'Not available' }}
+            </p>
+
+            <p>
+                <strong>User ID:</strong>
+                {{ userDetails()?.userId || 'Not available' }}
+            </p>
+
+        </div>
+    }
+
+</div>
+  </header>
+
+ <div class="main-layout" [class.with-details]="selectedRecord()">
+<!-- /we have to check -->
+    <aside class="sidebar">
+  <input id="fileInput" type="file" multiple hidden (change)="onFileSelected($event)">
+
+  @for (s of sections; track s) {
+    <div class="side-link"
+         [class.active]="activeSection() === s"
+         (click)="selectSection(s)">
+         <!-- it was using interpolation here -->
+      {{ s }}
+    </div>
+  }
+
+  <div class="sidebar-note">
+    Select a section to upload and view its files.
+  </div>
+</aside>
+
+    <main class="content">
+
+
+
+      <div class="page-heading">
+  <div>
+    <h1>{{ activeSection() }} files</h1>
+    <p>Files uploaded in the {{ activeSection() }} section</p>
+  </div>
+
+  <button class="primary-button" (click)="openFilePicker()">
+    + Upload to {{ activeSection() }}
+  </button>
+</div>
+
+      <!-- @if (selectedFile(); as file) {
+        <section class="upload-panel">
+          <div class="selected-file">
+            <div class="file-symbol">FILE</div>
+
+            <div class="selected-info">
+              <strong>{{ file.name }}</strong>
+              <p>{{ formatSize(file.size) }}</p>
+              <small>Ready to upload</small>
+            </div>
+          </div>
+
+          <div class="upload-actions">
+            <button
+              class="update-button"
+              (click)="updateFile()"
+              [disabled]="isUploading()">
+              {{ isUploading() ? 'Uploading...' : 'Upload File' }}
+            </button>
+
+            <button
+              class="cancel-button"
+              (click)="cancelSelection()"
+              [disabled]="isUploading()">
+              Cancel
+            </button>
+          </div>
+        </section>
+      } -->
+
+      @if (selectedFiles().length > 0) {
+  <section class="upload-panel">
+    <div class="selected-list">
+      <strong>{{ selectedFiles().length }} file(s) ready for {{ activeSection() }}</strong>
+      @for (f of selectedFiles(); track $index) {
+        <div class="selected-item">
+          <span>{{ f.name }} ({{ formatSize(f.size) }})</span>
+          <button class="remove-x" (click)="removeSelected($index)">✕</button>
+        </div>
+      }
+    </div>
+
+    <div class="upload-actions">
+      <button class="update-button" (click)="updateFile()" [disabled]="isUploading()">
+        {{ isUploading() ? 'Uploading...' : 'Upload ' + selectedFiles().length + ' file(s)' }}
+      </button>
+      <button class="cancel-button" (click)="cancelSelection()" [disabled]="isUploading()">
+        Cancel
+      </button>
+    </div>
+  </section>
+}
+
+@if (uploadIssues().length > 0) {
+  <div class="message error">
+    @for (i of uploadIssues(); track $index) {
+      <div>{{ i.fileName }}: {{ i.status === 'DUPLICATE' ? 'already exists' : i.message }}</div>
+    }
+  </div>
+}
+
+      @if (message()) {
+        <div class="message" [class]="'message ' + messageType()">
+          {{ message() }}
+        </div>
+      }
+
+      <section class="stats">
+        <div class="stat-card">
+          <!-- <span>Total saved files</span> -->
+
+          <span>Files in {{ activeSection() }}</span>
+          <strong>{{ files().length }}</strong>
+        </div>
+
+        <div class="stat-card">
+          <span>Currently displayed</span>
+          <strong>{{ filteredFiles().length }}</strong>
+        </div>
+      </section>
+
+      <!-- <div class="filter-row">
+        <button [class.filter-active]="selectedType() === 'All'" (click)="selectedType.set('All')">
+          All files
+        </button>
+        <button [class.filter-active]="selectedType() === 'Documents'" (click)="selectedType.set('Documents')">
+          Documents
+        </button>
+        <button [class.filter-active]="selectedType() === 'Images'" (click)="selectedType.set('Images')">
+          Images
+        </button>
+        <button [class.filter-active]="selectedType() === 'PDFs'" (click)="selectedType.set('PDFs')">
+          PDFs
+        </button>
+      </div> -->
+
+      <section class="files-card">
+        <div class="files-heading">
+          <div>
+            <h2>Saved files</h2>
+            <p>Files retrieved from your Spring Boot backend</p>
+          </div>
+
+          <button
+            class="refresh-button"
+            (click)="loadFiles()"
+            [disabled]="isLoading()">
+            {{ isLoading() ? 'Loading...' : '↻ Refresh Files' }}
+          </button>
+
+          @if (checkedIds().length > 0) {
+  <button class="danger-button" (click)="deleteChecked()">
+    Delete selected ({{ checkedIds().length }})
+  </button>
+}
+        </div>
+
+        @if (isLoading()) {
+          <p class="loading-text">Loading saved files...</p>
+        } @else {
+          <div class="table-wrapper">
+
+<div class="table-header">
+  <span><input type="checkbox" [checked]="allChecked()" (change)="toggleAll()"></span>
+  <span>ID</span>
+  <span>Name</span>
+  <span>File type</span>
+  <span>Size</span>
+  <span>Uploaded</span>
+  <span>Actions</span>
+</div>
+
+  @for (file of filteredFiles(); track file.id) {
+    <div class="file-row"
+         [class.row-active]="selectedRecord()?.id === file.id"
+         (click)="selectRecord(file)">
+
+      <span (click)="$event.stopPropagation()">
+        <input type="checkbox" [checked]="checkedIds().includes(file.id)"
+         (change)="toggleChecked(file.id)">
+      </span>
+
+      <span class="file-code">{{ file.code }}</span>
+
+      <div class="file-name">
+        <span class="file-symbol">{{ getSymbol(file) }}</span>
+        <strong>{{ file.fileName || 'Unnamed file' }}</strong>
+      </div>
+
+      <span class="file-type">{{ file.contentType || 'Unknown' }}</span>
+      <span>{{ formatSize(file.size || 0) }}</span>
+      <span>{{ file.uploadDate ? (file.uploadDate | date:'mediumDate') : 'Unknown' }}</span>
+
+      <span class="row-actions" (click)="$event.stopPropagation()">
+          <a class="view-link" [href]="fileUrl(file)" target="_blank" rel="noopener">View</a>
+          <a class="view-link" [href]="downloadUrl(file)">Download</a>
+          <button class="danger-link" (click)="deleteOne(file)">Delete</button>
+      </span>
+    </div>
+  }
+
+
+            @if (filteredFiles().length === 0) {
+              <div class="empty-state">
+                <div class="empty-icon">▤</div>
+                <h3>No files found</h3>
+                <p>
+                  {{ files().length === 0
+                    ? 'No saved files were returned by the backend.'
+                    : 'Try another search or file filter.' }}
+                </p>
+
+                <button class="primary-button" (click)="openFilePicker()">
+                  Select a file
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+    </main>
+    @if (selectedRecord(); as r) {
+      <aside class="details-pane">
+
+        <button class="pane-close" (click)="selectedRecord.set(null)">✕</button>
+
+        <div class="pane-preview">
+          @if ((r.contentType || '').startsWith('image/')) {
+            <img [src]="fileUrl(r)" alt="Preview">
+          } @else {
+            <div class="big-icon">{{ getSymbol(r) }}</div>
+          }
+        </div>
+
+        <h3 class="pane-name">{{ r.fileName }}</h3>
+
+        <div class="pane-actions">
+          <a class="view-link" [href]="fileUrl(r)" target="_blank" rel="noopener">View</a>
+          <a class="view-link" [href]="downloadUrl(r)">Download</a>
+        </div>
+
+        <h4>Details</h4>
+        <div class="meta-grid">
+          <span>ID</span>            <span>{{ r.code }}</span>
+          <span>Type</span>          <span>{{ typeLabel(r) }}</span>
+          <span>Size</span>          <span>{{ formatSize(r.size) }}</span>
+          <span>Section</span>       <span>{{ r.section }}</span>
+          <span>Date uploaded</span> <span>{{ r.uploadDate | date:'dd-MM-yyyy HH:mm' }}</span>
+        </div>
+
+      </aside>
+    }
+
+    
+  </div>
+  
+</div>

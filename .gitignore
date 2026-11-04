@@ -1,0 +1,45 @@
+# Java
+*.class
+target/
+out/
+
+# Angular
+node_modules/
+dist/
+.angular/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Secrets
+.env
+.env.*
+!.env.example
+application-local.properties
+application-secret.properties
+application-*.local.properties
+
+# RSA private keys
+**/privatekey.pem
+**/private.pem
+**/*private*.key
+**/*private*.pem
+
+# Uploaded documents
+MyFiles/uploads/
+uploads/
+
+# Logs and backups
+*.log
+logs/
+*.dump
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
