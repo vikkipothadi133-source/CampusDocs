@@ -1,0 +1,5 @@
+package com.myfiles.Service;
+
+public interface FilesService {
+
+}
