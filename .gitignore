@@ -43,3 +43,9 @@ logs/
 # OS files
 .DS_Store
 Thumbs.db
+
+# STS / Eclipse workspace
+.metadata/
+.settings/
+.project
+.classpath

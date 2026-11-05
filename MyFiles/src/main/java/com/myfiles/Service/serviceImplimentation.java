@@ -1,7 +1,4 @@
 package com.myfiles.Service;
-
-
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -30,10 +27,12 @@ import com.myfiles.Entity.UploadResultDto;
 import com.myfiles.Repository.FilesRepository;
 
 @Service
-public class serviceImplimentation {
+public class serviceImplimentation implements FilesService{
 
     private final FilesRepository filesRepository;
     private final Path storagePath;
+
+
 
     public serviceImplimentation(FilesRepository repository,
                                  @Value("${file-upload-dir}") String uploadDir) {
@@ -47,24 +46,25 @@ public class serviceImplimentation {
     }
 
 
+    @Override
     public FilesData uploadFile(MultipartFile file, Selection selection) throws IOException {
 
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty");
         }
 
-        // duplicate check
+
         String checksum = sha256(file);
         if (filesRepository.existsBySelectionAndChecksum(selection, checksum)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Duplicate file");
         }
 
-        // save on disk
+
         String originalName = Paths.get(file.getOriginalFilename()).getFileName().toString();
         String storageName = UUID.randomUUID() + "_" + originalName;
         Files.copy(file.getInputStream(), storagePath.resolve(storageName));
 
-        // next number = highest number in this section + 1
+
         int next = filesRepository.maxSeq(selection) + 1;
 
         FilesData data = new FilesData();
@@ -80,11 +80,12 @@ public class serviceImplimentation {
 
         return filesRepository.save(data);
     }
-    
-    
-    
-    
-    public synchronized List<UploadResultDto> uploadFiles(List<MultipartFile> files, Selection selection) {
+
+
+
+    @Override
+    public  List<UploadResultDto> uploadFiles(List<MultipartFile> files, Selection selection) {
+
 
         List<UploadResultDto> results = new ArrayList<>();
 
@@ -109,12 +110,13 @@ public class serviceImplimentation {
 
         return results;
     }
-    
-    
+
+
+    @Override
     public void delete(Long id) {
         FilesData f = getOneFile(id);
 
- 
+
         Path path = storagePath.resolve(f.getStorageName()).normalize();
         try {
             Files.deleteIfExists(path);
@@ -125,9 +127,10 @@ public class serviceImplimentation {
 
         filesRepository.delete(f);
     }
-    
-    
-    
+
+
+
+    @Override
     public int deleteMany(List<Long> ids) {
         int count = 0;
         for (Long id : ids) {
@@ -138,23 +141,26 @@ public class serviceImplimentation {
         }
         return count;
     }
-    
-    
 
+
+
+    @Override
     public List<FilesData> getall(Selection selection) {
         return filesRepository.findBySelectionOrderByIdDesc(selection);
     }
-    
-    
-    
 
+
+
+
+    @Override
     public FilesData getOneFile(Long id) {
         return filesRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
     }
-    
-    
 
+
+
+    @Override
     public Resource loadResource(FilesData f) {
         Path filePath = storagePath.resolve(f.getStorageName()).normalize();
 
@@ -171,15 +177,15 @@ public class serviceImplimentation {
         } catch (MalformedURLException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Cannot read file");
         }
-        
-        
-        
+
+
+
     }
 
-   
-    
-    
-    
+
+
+
+
     private String sha256(MultipartFile file) throws IOException {
         try (InputStream in = file.getInputStream()) {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

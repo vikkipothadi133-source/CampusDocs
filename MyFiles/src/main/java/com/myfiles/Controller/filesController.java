@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import com.myfiles.Service.FilesService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,11 +32,9 @@ import com.myfiles.Service.serviceImplimentation;
 @RequestMapping("/files/v1")
 public class filesController {
 
-    private final serviceImplimentation service;
 
-    public filesController(serviceImplimentation service) {
-        this.service = service;
-    }
+    @Autowired
+    private FilesService service;
 
 
     @PostMapping("/upload")
