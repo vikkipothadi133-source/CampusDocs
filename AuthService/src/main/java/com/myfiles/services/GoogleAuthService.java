@@ -3,6 +3,7 @@ package com.myfiles.services;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.myfiles.Entity.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -49,13 +50,17 @@ public class GoogleAuthService {
 		        newUser.setPassword(passwordEncoder.encode(randomPassword));
 
 		        newUser.setAuthProvider("GOOGLE");
+				newUser.setRole(Role.EMPLOYEE);
+
+
+
 
 		        return userRepository.save(newUser);
 	}
 	
 	
-	public String generateAuthToken(String email) {
-		return jwtutil.tokenGeneration(email);
+	public String generateAuthToken(UserAccount user) {
+		return jwtutil.tokenGeneration(user);
 	}
 
 }

@@ -1,22 +1,17 @@
 package com.myfiles.Controller;
 
+import com.myfiles.Dtos.*;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
-import com.myfiles.Dtos.LogInResponse;
-import com.myfiles.Dtos.LoginRequest;
-import com.myfiles.Dtos.ReqResponse;
-import com.myfiles.Dtos.UserRegistrationDto;
 import com.myfiles.services.Services;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "http://localhost:4200")
+//@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class loginController {
 	
 	@Autowired
@@ -24,9 +19,9 @@ public class loginController {
 	
 	
 	@PostMapping("/login")
-	public ResponseEntity<ReqResponse> login(@RequestBody LoginRequest dto) {
+	public ResponseEntity<ReqResponse> login(@RequestBody LoginRequest dto ,HttpServletResponse response ) {
 		  return ResponseEntity.ok(
-	                service.login(dto)
+	                service.login(dto, response)
 	        );
 	}
 	
@@ -34,9 +29,13 @@ public class loginController {
 	public String UserRegister(@RequestBody UserRegistrationDto dto) {
 		return service.userRegistration(dto);
 	}
-	
-	
-	
+
+
+//	@PreAuthorize("hasRole('SUPER_ADMIN')")
+//	@PutMapping("/users")
+//	public String updateRole(@RequestBody RoleUpdateDto dto) {
+//		return service.updateRole(dto);
+//	}
 	
 
 }

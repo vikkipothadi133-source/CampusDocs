@@ -58,7 +58,7 @@ public class GoogleOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         UserAccount user =
                 googleAuthService.findOrCreateGoogleUser(email, name);
         
-        String authToken = googleAuthService.generateAuthToken(user.getEmail());
+        String authToken = googleAuthService.generateAuthToken(user);
         
         
         ResponseCookie cookie = ResponseCookie.from("token", authToken)
@@ -71,7 +71,7 @@ public class GoogleOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        // Redirect browser to Angular
+        
         response.sendRedirect("http://localhost:4200/files");
     }
 }

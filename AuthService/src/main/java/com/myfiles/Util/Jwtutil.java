@@ -9,6 +9,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Date;
 import java.util.Base64;
 
+import com.myfiles.Entity.UserAccount;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -17,12 +18,17 @@ import io.jsonwebtoken.Jwts;
 
 @Component
 public class Jwtutil {
-	
-	
-	public String tokenGeneration(String email) {
-		return Jwts.builder().subject(email)
-				.issuedAt(new Date()).expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
-				.signWith(getPrivateKey(), Jwts.SIG.RS256).compact();
+
+
+	public String tokenGeneration(UserAccount user) {
+
+		return Jwts.builder()
+				.subject(user.getEmail())
+				.claim("role", user.getRole().name())
+				.issuedAt(new Date())
+				.expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+				.signWith(getPrivateKey(), Jwts.SIG.RS256)
+				.compact();
 	}
 	
  public Claims validateToken(String token) {

@@ -4,12 +4,12 @@ package com.myfiles.Service;
 import java.io.IOException;
 import java.util.List;
 
+import com.myfiles.Dtos.UploadResultDto;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.myfiles.Entity.FilesData;
 import com.myfiles.Entity.Selection;
-import com.myfiles.Entity.UploadResultDto;
 
 public interface FilesService {
 

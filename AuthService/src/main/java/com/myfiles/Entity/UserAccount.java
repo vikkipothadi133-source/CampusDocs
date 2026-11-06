@@ -1,10 +1,6 @@
 package com.myfiles.Entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -33,5 +29,9 @@ public class UserAccount {
 
 //	@Column(nullable = false)
 	private String authProvider = "LOCAL";
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private Role role;
 
 }

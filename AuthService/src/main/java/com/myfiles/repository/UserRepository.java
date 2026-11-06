@@ -2,6 +2,8 @@ package com.myfiles.repository;
 
 import java.util.Optional;
 
+import com.myfiles.Dtos.RoleUpdateDto;
+import com.myfiles.Entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -23,7 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.myfiles.Entity.FilesData;
 import com.myfiles.Entity.Selection;
-import com.myfiles.Entity.UploadResultDto;
+import com.myfiles.Dtos.UploadResultDto;
 import com.myfiles.Repository.FilesRepository;
 
 @Service
@@ -126,6 +126,7 @@ public class serviceImplimentation implements FilesService{
 
 
         filesRepository.delete(f);
+        System.out.println("File deleted Successful");
     }
 
 
@@ -181,9 +182,6 @@ public class serviceImplimentation implements FilesService{
 
 
     }
-
-
-
 
 
     private String sha256(MultipartFile file) throws IOException {
