@@ -5,6 +5,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { finalize, timeout } from 'rxjs';
 import { RouterOutlet } from '@angular/router';
 import { Header } from '../header/header';
+import { environment } from '../../environments/environment';
+
 
 
 type MessageType = 'info' | 'success' | 'error' | '';
@@ -21,7 +23,7 @@ export class Files implements OnInit {
     private http = inject(HttpClient);
 
     // Existing Spring Boot API
-    apiUrl = 'http://localhost:8081/files/v1';
+    private apiUrl = `${environment.apiUrl}/files/v1`;
 
     // State (signals so the UI always refreshes)
     files = signal<any[]>([]);
@@ -30,10 +32,10 @@ export class Files implements OnInit {
     // selectedFile = signal<File | null>(null);
     selectedFiles = signal<File[]>([]);
     checkedIds = signal<number[]>([]);
-    uploadIssues = signal<any[]>([]);   
+    uploadIssues = signal<any[]>([]);
     allChecked = computed(() =>
-    this.filteredFiles().length > 0 &&
-    this.filteredFiles().every((f) => this.checkedIds().includes(f.id)));     
+        this.filteredFiles().length > 0 &&
+        this.filteredFiles().every((f) => this.checkedIds().includes(f.id)));
 
 
     searchText = signal('');
@@ -48,12 +50,12 @@ export class Files implements OnInit {
     activeSection = signal('Attendance');
 
     // Filtered list, recalculated automatically
-  filteredFiles = computed(() => {
-    const search = this.searchText().toLowerCase().trim();
-    return this.files().filter((f) =>
-        String(f.fileName || '').toLowerCase().includes(search)
-    );
-});
+    filteredFiles = computed(() => {
+        const search = this.searchText().toLowerCase().trim();
+        return this.files().filter((f) =>
+            String(f.fileName || '').toLowerCase().includes(search)
+        );
+    });
 
     // Load saved files when the page opens / reloads
     ngOnInit(): void {
@@ -66,7 +68,8 @@ export class Files implements OnInit {
         this.isLoading.set(true);
         //changed here 
         this.http.get<any>(this.apiUrl + '/all', {
-            params: new HttpParams().set('section', this.activeSection())
+            params: new HttpParams().set('section', this.activeSection()),
+            withCredentials: true
         })
             .pipe(
                 timeout({ first: 15000 }),
@@ -92,48 +95,58 @@ export class Files implements OnInit {
             });
     }
 
-   onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-        this.selectedFiles.set(Array.from(input.files));
-        this.uploadIssues.set([]);
-        this.showMessage(input.files.length + ' file(s) selected. Click Upload.', 'info');
+    onFileSelected(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        if (input.files && input.files.length > 0) {
+            this.selectedFiles.set(Array.from(input.files));
+            this.uploadIssues.set([]);
+            this.showMessage(input.files.length + ' file(s) selected. Click Upload.', 'info');
+        }
     }
-}
-removeSelected(index: number): void {
-    this.selectedFiles.update((list) => list.filter((_, i) => i !== index));
-}
-
-  updateFile(): void {
-    const list = this.selectedFiles();
-    if (list.length === 0) {
-        this.showMessage('Please select files first.', 'error');
-        return;
+    removeSelected(index: number): void {
+        this.selectedFiles.update((list) => list.filter((_, i) => i !== index));
     }
-    if (this.isUploading()) return;
 
-    const formData = new FormData();
-    list.forEach((f) => formData.append('files', f));
-    formData.append('section', this.activeSection());
+    updateFile(): void {
 
-    this.isUploading.set(true);
-    this.showMessage('Uploading ' + list.length + ' file(s)...', 'info');
+        if (!this.canUpload()) {
+            this.showMessage('You do not have permission to upload files.', 'error');
+            return;
+        }
+        const list = this.selectedFiles();
 
-    this.http.post<any[]>(this.apiUrl + '/upload', formData)
-        .pipe(timeout({ first: 300000 }), finalize(() => this.isUploading.set(false)))
-        .subscribe({
-            next: (results) => {
-                const ok = results.filter((r) => r.status === 'UPLOADED').length;
-                this.uploadIssues.set(results.filter((r) => r.status !== 'UPLOADED'));
-                this.showMessage(ok + ' of ' + results.length + ' uploaded.',
-                    ok === results.length ? 'success' : 'error');
-                this.selectedFiles.set([]);
-                this.clearFileInput();
-                this.loadFiles();
-            },
-            error: () => this.showMessage('Upload failed. Check the backend.', 'error')
-        });
-}
+        if (list.length === 0) {
+            this.showMessage('Please select files first.', 'error');
+            return;
+        }
+        if (this.isUploading()) return;
+
+        const formData = new FormData();
+        list.forEach((f) => formData.append('files', f));
+        formData.append('section', this.activeSection());
+
+        this.isUploading.set(true);
+        this.showMessage('Uploading ' + list.length + ' file(s)...', 'info');
+
+        this.http.post<any[]>(
+            this.apiUrl + '/upload',
+            formData,
+            { withCredentials: true }
+        )
+            .pipe(timeout({ first: 300000 }), finalize(() => this.isUploading.set(false)))
+            .subscribe({
+                next: (results) => {
+                    const ok = results.filter((r) => r.status === 'UPLOADED').length;
+                    this.uploadIssues.set(results.filter((r) => r.status !== 'UPLOADED'));
+                    this.showMessage(ok + ' of ' + results.length + ' uploaded.',
+                        ok === results.length ? 'success' : 'error');
+                    this.selectedFiles.set([]);
+                    this.clearFileInput();
+                    this.loadFiles();
+                },
+                error: () => this.showMessage('Upload failed. Check the backend.', 'error')
+            });
+    }
 
     showMessage(text: string, type: MessageType): void {
         this.message.set(text);
@@ -156,12 +169,12 @@ removeSelected(index: number): void {
     }
 
     //cacel selection stpos upload and clears the input
-   cancelSelection(): void {
-    this.selectedFiles.set([]);
-    this.message.set('');
-    this.messageType.set('');
-    this.clearFileInput();
-}
+    cancelSelection(): void {
+        this.selectedFiles.set([]);
+        this.message.set('');
+        this.messageType.set('');
+        this.clearFileInput();
+    }
     //it returns the symbol according to files 
     getSymbol(file: any): string {
         const type = String(file.contentType || file.type || '');
@@ -215,23 +228,48 @@ removeSelected(index: number): void {
     // Logged-in user details
     userDetails = signal<any>(null);
 
-    // Load user details from localStorage
-    loadUserDetails(): void {
-        const storedUser = localStorage.getItem('user');
 
-        console.log('Stored user:', storedUser);
+    userEmail = signal('');
+    userRole = signal('');
 
-        if (storedUser) {
-            try {
-                const user = JSON.parse(storedUser);
-                this.userDetails.set(user);
+    // Role identification
+    isSuperAdmin = computed(() => this.userRole() === 'ROLE_SUPER_ADMIN');
+    isAdmin = computed(() => this.userRole() === 'ROLE_ADMIN');
+    isManager = computed(() => this.userRole() === 'ROLE_MANAGER');
+    isEmployee = computed(() => this.userRole() === 'ROLE_EMPLOYEE');
 
-                console.log('Loaded user details:', user);
-            } catch (error) {
-                console.error('Invalid user data:', error);
-            }
-        }
-    }
+    // Permission checks
+    canUpload = computed(() =>
+        this.isSuperAdmin() || this.isAdmin() || this.isManager()
+    );
+
+    canUpdate = computed(() =>
+        this.isSuperAdmin() || this.isAdmin() || this.isManager()
+    );
+
+    canDelete = computed(() =>
+        this.isSuperAdmin() || this.isAdmin()
+    );
+
+    canDownload = computed(() => true);
+
+    // // Load user details from localStorage
+    // loadUserDetails(): void {
+    //     const storedUser = localStorage.getItem('user');
+
+    //     console.log('Stored user:', storedUser);
+
+    //     if (storedUser) {
+    //         try {
+    //             const user = JSON.parse(storedUser);
+    //             this.userDetails.set(user);
+
+    //             console.log('Loaded user details:', user);
+    //         } catch (error) {
+    //             console.error('Invalid user data:', error);
+    //         }
+    //     }
+    // }
 
     // Open and close profile
     toggleProfile(): void {
@@ -242,47 +280,92 @@ removeSelected(index: number): void {
 
 
     downloadUrl(file: any): string {
-    return `${this.apiUrl}/download/${file.id}`;
-}
+        return `${this.apiUrl}/download/${file.id}`;
+    }
 
-toggleChecked(id: number): void {
-    this.checkedIds.update((ids) =>
-        ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
-}
+    toggleChecked(id: number): void {
+        this.checkedIds.update((ids) =>
+            ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
+    }
 
-toggleAll(): void {
-    this.checkedIds.set(this.allChecked() ? [] : this.filteredFiles().map((f) => f.id));
-}
+    toggleAll(): void {
+        this.checkedIds.set(this.allChecked() ? [] : this.filteredFiles().map((f) => f.id));
+    }
 
-deleteOne(file: any): void {
-    if (!confirm('Delete "' + file.fileName + '"? This cannot be undone.')) return;
+    deleteOne(file: any): void {
 
-    this.http.delete(`${this.apiUrl}/${file.id}`).subscribe({
-        next: () => {
-            if (this.selectedRecord()?.id === file.id) this.selectedRecord.set(null);
-            this.checkedIds.update((ids) => ids.filter((x) => x !== file.id));
-            this.showMessage('File deleted.', 'success');
-            this.loadFiles();
-        },
-        error: () => this.showMessage('Delete failed.', 'error')
-    });
-}
+        if (!this.canDelete()) {
+            this.showMessage('You do not have permission to delete files.', 'error');
+            return;
+        }
+        if (!confirm('Delete "' + file.fileName + '"? This cannot be undone.')) return;
 
-deleteChecked(): void {
-    const ids = this.checkedIds();
-    if (ids.length === 0) return;
-    if (!confirm('Delete ' + ids.length + ' file(s)? This cannot be undone.')) return;
+        this.http.delete(`${this.apiUrl}/${file.id}`, {
+            withCredentials: true
+        }).subscribe({
+            next: () => {
+                if (this.selectedRecord()?.id === file.id) this.selectedRecord.set(null);
+                this.checkedIds.update((ids) => ids.filter((x) => x !== file.id));
+                this.showMessage('File deleted.', 'success');
+                this.loadFiles();
+            },
+            error: () => this.showMessage('Delete failed.', 'error')
+        });
+    }
 
-    this.http.post<{ deleted: number }>(this.apiUrl + '/delete', ids).subscribe({
-        next: (res) => {
-            this.checkedIds.set([]);
-            this.selectedRecord.set(null);
-            this.showMessage(res.deleted + ' file(s) deleted.', 'success');
-            this.loadFiles();
-        },
-        error: () => this.showMessage('Delete failed.', 'error')
-    });
-}
+    deleteChecked(): void {
+        const ids = this.checkedIds();
+        if (ids.length === 0) return;
+        if (!confirm('Delete ' + ids.length + ' file(s)? This cannot be undone.')) return;
+
+        this.http.post<{ deleted: number }>(
+            this.apiUrl + '/delete',
+            ids,
+            { withCredentials: true }
+        ).subscribe({
+            next: (res) => {
+                this.checkedIds.set([]);
+                this.selectedRecord.set(null);
+                this.showMessage(res.deleted + ' file(s) deleted.', 'success');
+                this.loadFiles();
+            },
+            error: () => this.showMessage('Delete failed.', 'error')
+        });
+    }
+
+
+    // userEmail = signal('');
+    // userRole = signal('');
+
+    loadUserDetails(): void {
+
+        this.http.get(
+            this.apiUrl + '/me',
+            {
+                withCredentials: true,
+                responseType: 'text'
+            }
+        ).subscribe({
+
+            next: (response: string) => {
+
+                const emailMatch = response.match(/Email:\s*([^,]+)/);
+                const roleMatch = response.match(/Role:\s*([A-Z_]+)/);
+
+                this.userEmail.set(emailMatch?.[1].trim() || '');
+                this.userRole.set(roleMatch?.[1].trim() || '');
+
+                console.log('User Email:', this.userEmail());
+                console.log('User Role:', this.userRole());
+
+            },
+
+            error: (error) => {
+                console.error('Failed to load user details:', error);
+            }
+
+        });
+    }
 
 
 
